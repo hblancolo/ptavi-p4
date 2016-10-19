@@ -6,6 +6,7 @@ Clase (y programa principal) para un servidor de eco en UDP simple
 
 import sys
 import socketserver
+import time
 
 
 class SIPRegisterHandler(socketserver.DatagramRequestHandler):
@@ -15,20 +16,25 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
 
     dic = {}  # almacena nombre usuario e ip correspondiente cuando REGISTER
 
+    def check_expire(self):
+        print('   dfgdfg    ')
+
     def handle(self):  # se ejecuta cada vez que server reciba petición
-        self.wfile.write(b"SIP/2.0 200 OK\r\n\r\n")
-        for line in self.rfile:
-            line_str = line.decode('utf-8')
-            if line_str != '\r\n':
-                print('Dir. IP y puerto del cliente:', self.client_address)
-                print("El cliente nos manda", line.decode('utf-8'))
-                metod = line_str.split(' ')[0]
-                user = line_str.split(' ')[1].split(':')[-1]
-                SIPRegisterHandler.dic[user] = metod
+        line_str = self.rfile.read().decode('utf-8')
+        list_linecontent = line_str.split()
+        print(list_linecontent)
+        if list_linecontent[0] == 'REGISTER':
+            user = list_linecontent[1].split(':')[-1]
+            ip_user = self.client_address[0]
+            if list_linecontent[3] == 'Expires:':
+                expires = time.strftime('%Y-%m-%d %H:%M:%S',
+                                        time.gmtime(time.time() +
+                                        int(list_linecontent[4])))
+                self.dic[user] = [{'address': ip_user}, {'expires': expires}]
 
-            
+                self.wfile.write(b"SIP/2.0 200 OK\r\n\r\n")
+        print(self.dic)
 
-        print(SIPRegisterHandler.dic)
 
 if __name__ == "__main__":
     serv = socketserver.UDPServer(('', int(sys.argv[1])), SIPRegisterHandler)
