@@ -7,6 +7,7 @@ Clase (y programa principal) para un servidor de eco en UDP simple
 import sys
 import socketserver
 import time
+import json
 
 
 class SIPRegisterHandler(socketserver.DatagramRequestHandler):
@@ -26,7 +27,12 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
 
         for usuario in expired_users:
             del self.dic[usuario]
-    
+
+    def register2json(self):
+        fich_json = open('registered.json', 'w')
+        codigo_json = json.dumps(self.dic)
+        fich_json.write(codigo_json)
+        fich_json.close()
 
     def handle(self):  # se ejecuta cada vez que server reciba petición
         line_str = self.rfile.read().decode('utf-8')
@@ -41,9 +47,8 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                 self.dic[user] = [{'address': ip_user}, {'expires': expires}]
 
                 self.wfile.write(b"SIP/2.0 200 OK\r\n\r\n")
-        print(self.dic)
         self.check_expires()
-        print(self.dic)
+        self.register2json()
 if __name__ == "__main__":
     serv = socketserver.UDPServer(('', int(sys.argv[1])), SIPRegisterHandler)
     print("Lanzando servidor UDP de eco...")
